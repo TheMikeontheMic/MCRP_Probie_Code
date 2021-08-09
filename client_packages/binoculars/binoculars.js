@@ -41,24 +41,30 @@ mp.events.add('render', () => {
         mp.game.controls.disableAllControlActions(2);
         mp.game.ui.displayRadar(false);
 
+    if (!player.vehicle){
         if (!player.isUsingScenario("WORLD_HUMAN_BINOCULARS")) {
             player.taskStartScenarioInPlace("WORLD_HUMAN_BINOCULARS", 0, true);
             mp.game.wait(500);
         }
-
+    }
         const graphics = mp.game.graphics;
         graphics.drawScaleformMovieFullscreen(_handle, 255, 255, 255, 255, false);
 
         camera.setActive(true);
         mp.game.cam.renderScriptCams(true, false, 0, true, false);
 
+        if (player.vehicle && camera) {
+            const playerPos = player.position;
+            camera.setCoord(playerPos.x, playerPos.y, playerPos.z + .7);
+        }
+
         camRot = new mp.Vector3(camRot.x - y, 0, camRot.z - x);
 
-        if (camRot.x <= 30 && camRot.x >= -40) {
+        if (camRot.x <= 30 && camRot.x >= -30) {
             camera.setRot(camRot.x, camRot.y, camRot.z, 2);
         } else if (camRot.x < 30) {
             camRot.x = -30;
-        } else if (camRot.x > -40) {
+        } else if (camRot.x > -30) {
             camRot.x = 30;
         }
 
