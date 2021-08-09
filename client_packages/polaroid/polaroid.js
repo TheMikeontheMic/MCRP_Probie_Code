@@ -16,7 +16,7 @@ let tab = 0x09; //Selfie Camera
 
 let axisXModifer = 0;
 let axisYModifer = 0;
-let axisZModifer = 1.5;
+let axisZModifer = 1.0;
 let fovModifer = 60;
 let lastCamRot;
 
@@ -26,10 +26,10 @@ const zoomSpeed = 1.5;
 const minZoom = 5.0;
 const maxZoom = 60.0;
 
-
 let hasPolaDeployed = true;
 let PolaroidActive = false;
 let selfieCamera = false;
+let selfieCamRotZ;
 let camRot;
 const player = mp.players.local;
 
@@ -47,33 +47,39 @@ mp.events.add('render', () => {
 
 
 
-        const graphics = mp.game.graphics;
-        graphics.pushScaleformMovieFunction(_handle, 'OPEN_SHUTTER');
-        graphics.pushScaleformMovieFunctionParameterInt(1);
+        // const graphics = mp.game.graphics;
+        // graphics.pushScaleformMovieFunction(_handle, 'OPEN_SHUTTER');
+        // graphics.pushScaleformMovieFunctionParameterInt(1);
 
         camera.setActive(true);
         mp.game.cam.renderScriptCams(true, false, 0, true, false);
 
-        camRot = new mp.Vector3(camRot.x - y, 0, camRot.z - x);
-
-        if (camRot.x <= 30 && camRot.x >= -40) {
-            camera.setRot(camRot.x, camRot.y, camRot.z, 2);
-        } else if (camRot.x < 30) {
-            camRot.x = -30;
-        } else if (camRot.x > -40) {
-            camRot.x = 30;
+        if (player.vehicle && camera && !selfieCamera) {
+            const playerPos = player.position;
+            camera.setCoord(playerPos.x, playerPos.y, playerPos.z + .7);
+        } else if (player.vehicle && camera && selfieCamera){
+            const playerPos = player.position;
+            camera.setCoord(playerPos.x - .5, playerPos.y + .5, playerPos.z + .7);
+            camera.setRot(playerPos.x, playerPos.y, playerPos.z + 180, 2);
         }
 
-
-        //to be worked on.
-        /*if(selfieCamera == true && camRot.z <= camRot.z + 10 && camRot.z >= -20){
+        camRot = new mp.Vector3(camRot.x - y, 0, camRot.z - x);
+        if (camRot.x <= (selfieCamera ? 15 : 30) && camRot.x >= (selfieCamera ? -15 : -10)) {
             camera.setRot(camRot.x, camRot.y, camRot.z, 2);
-            mp.gui.chat.push(`z = ${camRot.z}`)
-        } else if (camRot.z < 10) {
-            camRot.z = -10;
-        } else if (camRot.z > -20) {
-            camRot.z = 20;
-        }*/
+            mp.gui.chat.push(`${camRot.x}`)
+        } else if (camRot.x < (selfieCamera ? 15 : 30)) {
+            camRot.x = (selfieCamera ? -15 : -10);
+        } else if (camRot.x > (selfieCamera ? -20 : -10)) {
+            camRot.x = (selfieCamera ? 15 : 30);
+        }
+
+        if (selfieCamera && camRot.z <= selfieCamRotZ + 30 && camRot.z >= selfieCamRotZ - 30) {
+            camera.setRot(camRot.x, camRot.y, camRot.z, 2);
+        } else if (selfieCamera && camRot.z < selfieCamRotZ + 30) {
+            camRot.z = selfieCamRotZ - 30;
+        } else if (selfieCamera && camRot.z > selfieCamRotZ - 40) {
+            camRot.z = selfieCamRotZ + 30;
+        }
 
         if (zoomIn > 0) {
             let currentFov = camera.getFov();
@@ -93,10 +99,13 @@ mp.events.add('render', () => {
         camera.setActive(false);
         mp.game.cam.renderScriptCams(false, false, 0, true, false);
         camera = null;
-        player.clearTasks();
         mp.game.ui.displayRadar(true);
         mp.gui.chat.show(true);
         mp.gui.chat.activate(true);
+        if (!player.vehicle) {
+            player.clearTasks();
+            player.freezePosition(false);
+        }
         selfieCamera = false;
     }
 });
@@ -120,7 +129,10 @@ mp.keys.bind(o, true, function () {
     PolaroidActive = !PolaroidActive;
     mp.gui.chat.show(false);
     mp.gui.chat.activate(false);
-    PolaroidActive ? mp.events.callRemote('startAnimation', 'cellphone@self@michael@', 'finger_point') : mp.events.callRemote('stopAnimation')
+    if (!player.vehicle) {
+        player.freezePosition(true);
+        PolaroidActive ? mp.events.callRemote('startAnimation', 'cellphone@self@michael@', 'finger_point') : mp.events.callRemote('stopAnimation');
+    }
 });
 
 mp.keys.bind(tab, true, function () {
@@ -143,6 +155,7 @@ mp.events.addDataHandler('heading', function (entity, value) {
         camRot = new mp.Vector3(0, 50, value - 180);
         player.setRotation(0, 0, value + 28, 0, true);
         camera = mp.cameras.new('selfieCamera', new mp.Vector3(playerPos.x + (0.8 * Math.sin(-value * Math.PI / 180)), playerPos.y + (0.8 * Math.cos(-value * Math.PI / 180)), playerPos.z + 0.6), camRot, fovModifer);
+        selfieCamRotZ = camRot.z;
     }
 });
 
