@@ -45,12 +45,6 @@ mp.events.add('render', () => {
         mp.game.controls.disableAllControlActions(2);
         mp.game.ui.displayRadar(false);
 
-
-
-        // const graphics = mp.game.graphics;
-        // graphics.pushScaleformMovieFunction(_handle, 'OPEN_SHUTTER');
-        // graphics.pushScaleformMovieFunctionParameterInt(1);
-
         camera.setActive(true);
         mp.game.cam.renderScriptCams(true, false, 0, true, false);
 
